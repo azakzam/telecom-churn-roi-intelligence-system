@@ -294,7 +294,7 @@ if final_pipe is not None:
             break
 
 # ─────────────────────────────────────────────────────────────────────────────
-# TABS SETUP
+# 5. TABS SETUP
 # ─────────────────────────────────────────────────────────────────────────────
 tab_data, tab_eda, tab_cmp, tab_eval, tab_feat, tab_roi, tab_pred, tab_strats = st.tabs([
    "Data", "EDA", " Model Comparison", "Evaluation",
