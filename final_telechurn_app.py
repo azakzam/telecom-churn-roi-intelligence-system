@@ -43,9 +43,9 @@ plt.rcParams.update({
     "grid.alpha": 0.7                
 })
 
-COLOR_NO  = '#00FFFF' # Cyan (For 'No Churn' / Good things)
-COLOR_YES = '#FF00FF' # Magenta (For 'Churn' / Bad things)
-COLOR_ALT = '#39FF14' # Neon Green (For neutral/highlight things)
+COLOR_NO  = '#00FFFF' 
+COLOR_YES = '#FF00FF' 
+COLOR_ALT = '#39FF14' 
 
 st.title(" Telecom Customer Churn — Production ML System")
 
@@ -68,7 +68,6 @@ def load_data(file):
     df["TotalCharges"] = pd.to_numeric(df["TotalCharges"], errors="coerce")
     df["TotalCharges"].fillna(df["TotalCharges"].median(), inplace=True)
     
-    # Encode target to binary explicitly
     if "Churn" in df.columns and df["Churn"].dtype == object:
         df["Churn"] = (df["Churn"] == "Yes").astype(int)
         
@@ -90,7 +89,6 @@ def make_preprocessor(include_scaler: bool) -> ColumnTransformer:
         
     cat_pipe = SkPipeline([
         ("imputer", SimpleImputer(strategy="most_frequent")),  
-        # FIXED: Sparse output true by default. Prevents memory explosion.
         ("ohe", OneHotEncoder(handle_unknown="ignore")), 
     ])
 
@@ -324,8 +322,7 @@ with tab_eda:
     
     df_eda = df.copy()
     df_eda["Churn"] = df_eda["Churn"].map({1: "Yes", 0: "No"})
-
-    # ── 1. Churn Distribution ─────────────────────────────────────────────────
+    
     st.markdown("Churn Distribution")
     churn_counts = df_eda["Churn"].value_counts()
     churn_pct    = df_eda["Churn"].value_counts(normalize=True) * 100
@@ -408,8 +405,7 @@ with tab_eda:
             ax.set_ylabel("Density / Count")
             ax.legend()
             st.pyplot(fig)
-    
-        # DYNAMIC INSIGHT BLOCK FOR NUMERICS
+            
         mean_yes = churn_yes_n.mean()
         mean_no = churn_no_n.mean()
         if mean_yes > mean_no:
@@ -513,7 +509,6 @@ with tab_eda:
 
     # ── 5. Correlation Heatmap ────────────────────────────────────────────────
     st.markdown("Correlation Heatmap (Encoded Features)")
-    # Generate temporary encoded dataframe strictly for the correlation heatmap
     df_encoded = pd.get_dummies(df, drop_first=True)
     
     fig, ax = plt.subplots(figsize=(12, 8)
@@ -526,15 +521,11 @@ with tab_eda:
 
     corr_matrix = df_encoded.corr()
     if "Churn" in corr_matrix.columns:
-        # Sort absolute correlations with Churn (excluding Churn itself)
         churn_corr = corr_matrix["Churn"].drop("Churn").abs().sort_values(ascending=False)
         top_feature = churn_corr.index[0]
         top_val = corr_matrix.loc[top_feature, "Churn"]
-
-        # Determine direction and business translation
         direction = "positive" if top_val > 0 else "negative"
         effect = "increases" if top_val > 0 else "decreases"
-            
         st.info(f" **Insight:** The heatmap scans for mathematical relationships. It found that **{top_feature}** has the strongest {direction} correlation (**{top_val:.2f}**) with Churn. In business terms: as {top_feature} goes up, the likelihood of a customer leaving **{effect}**.")
     st.divider()
 
@@ -543,8 +534,6 @@ with tab_eda:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_cmp:
     st.subheader("Model Comparison")
-    
-    # FORMATTER UPDATED
     format_dict = {
         "ROC-AUC": "{:.4f}",
         "F1 Score (Churn)": "{:.4f}", 
