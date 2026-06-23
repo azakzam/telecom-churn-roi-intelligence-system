@@ -1,12 +1,6 @@
 """
 Telecom Customer Churn — Production ML Pipeline & ROI System
-=====================================================
-✅ Pipeline Native Prediction & Leakage Safe
-✅ ADVANCED GRAPHICS: Dark Mode, Gridlines, Vibrant Colors
-✅ HIGHLY READABLE: Step-by-step hashtag commented plotting code
-✅ MEMORY SAFE: Sparse categorical outputs, correct SMOTE usage
 """
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -38,18 +32,17 @@ st.set_page_config(page_title="Telecom Churn ML System", layout="wide")
 # Set Matplotlib Global Dark Theme
 plt.style.use('dark_background')
 plt.rcParams.update({
-    "axes.facecolor": "black",       # Black background for the actual plot area
-    "figure.facecolor": "black",     # Black background for the outer figure
-    "text.color": "white",           # White text
-    "axes.labelcolor": "white",      # White axis labels
-    "xtick.color": "white",          # White X ticks
-    "ytick.color": "white",          # White Y ticks
-    "grid.color": "#444444",         # Dark gray grid lines
-    "grid.linestyle": "--",          # Dashed grid lines
-    "grid.alpha": 0.7                # Slightly transparent grid lines
+    "axes.facecolor": "black",       
+    "figure.facecolor": "black",     
+    "text.color": "white",           
+    "axes.labelcolor": "white",      
+    "xtick.color": "white",          
+    "ytick.color": "white",          
+    "grid.color": "#444444",         
+    "grid.linestyle": "--",          
+    "grid.alpha": 0.7                
 })
 
-# Neon Color Palette for our graphs
 COLOR_NO  = '#00FFFF' # Cyan (For 'No Churn' / Good things)
 COLOR_YES = '#FF00FF' # Magenta (For 'Churn' / Bad things)
 COLOR_ALT = '#39FF14' # Neon Green (For neutral/highlight things)
@@ -57,7 +50,7 @@ COLOR_ALT = '#39FF14' # Neon Green (For neutral/highlight things)
 st.title(" Telecom Customer Churn — Production ML System")
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 1. DATA LOADING & PREPROCESSING FACTORY
+# 1. DATA LOADING & PREPROCESSING 
 # ─────────────────────────────────────────────────────────────────────────────
 st.sidebar.subheader("📂 Upload Dataset")
 uploaded_file = st.sidebar.file_uploader("Upload Telco_Customer_Churn.xlsx/.csv", type=["xlsx", "csv"])
@@ -150,7 +143,6 @@ with st.sidebar:
 # 3. TRAINING & EVALUATION PIPELINE (Leakage Free)
 # ─────────────────────────────────────────────────────────────────────────────
 rs = int(random_state)
-# Use a standard Train vs Test split since threshold tuning is now interactive via slider
 X_trainval, X_test, y_trainval, y_test = train_test_split(X_raw, y, test_size=test_size, random_state=rs, stratify=y)
 
 # =============================================================================
@@ -181,7 +173,7 @@ pipelines = {
     ]),
     "LightGBM": SkPipeline([ 
         ("pre", make_preprocessor(include_scaler=False)),  
-        # LGBM handles imbalance natively
+       
         ("clf", LGBMClassifier(
             n_estimators=lgb_n_estimators, 
             learning_rate=lgb_learning_rate, 
@@ -206,7 +198,6 @@ with st.spinner("Training models with selected hyperparameters..."):
         y_prob = pipe.predict_proba(X_test)[:, 1]
         y_pred_temp = (y_prob >= threshold).astype(int)
         
-        # Calculating all the new binary metrics needed for the UI
         acc = accuracy_score(y_test, y_pred_temp)
         f1_churn = f1_score(y_test, y_pred_temp)
         rec_churn = recall_score(y_test, y_pred_temp)
@@ -215,7 +206,6 @@ with st.spinner("Training models with selected hyperparameters..."):
         
         results.append([name, roc_auc, f1_churn, rec_churn, prec_churn, acc, threshold])
         
-        # Tracking best model based on F1 Churn
         if f1_churn > best_f1:
             best_f1 = f1_churn
             best_pipe = pipe
@@ -233,14 +223,12 @@ st.markdown("Select Model for Downstream Analysis")
 
 model_options = ["Use Auto-Selected Best Model"] + list(pipelines.keys())
 
-# FIX 1: Added a unique 'key' to force Streamlit to remember the selection
 selected_model_choice = st.selectbox(
     "Choose which model to use for feature importance and evaluation:", 
     model_options,
     key="model_selector_override"
 )
 
-# Assign the pipeline and name based on the dropdown
 if selected_model_choice == "Use Auto-Selected Best Model":
     model_choice = best_name
     final_pipe = best_pipe
@@ -252,8 +240,6 @@ else:
     final_name = selected_model_choice
     st.info(f"Currently analyzing: **{final_name}** (Manually Selected)")
 
-# FIX 2: Generate the predictions using final_pipe immediately after selection
-# These variables MUST be the ones you use in your Tab 4 Evaluation metrics!
 y_prob_test = final_pipe.predict_proba(X_test)[:, 1]
 y_pred_test = (y_prob_test >= threshold).astype(int)
 
@@ -264,11 +250,9 @@ if final_pipe is not None:
     clf_step = final_pipe.named_steps["clf"]
     pre_step = final_pipe.named_steps["pre"]
     
-    # Extract feature names safely
     ohe_names = pre_step.named_transformers_["cat"].named_steps["ohe"].get_feature_names_out(cat_cols).tolist()
     all_feature_names = num_cols + ohe_names
-
-    # Tree models use feature_importances_, LR uses absolute coefficients.
+    
     importances = clf_step.feature_importances_ if hasattr(clf_step, "feature_importances_") else np.abs(clf_step.coef_[0])
     
     feat_df = pd.DataFrame({
@@ -333,13 +317,11 @@ with tab_data:
 # ─────────────────────────────────────────────────────────────────────────────
 with tab_eda:
     st.subheader("🔍 Exploratory Data Analysis")
-    
-    # Ensure global colors are defined if not already at the top of your script
+
     COLOR_NO  = '#00FFFF' # Cyan (No Churn)
     COLOR_YES = '#FF00FF' # Magenta (Churn)
     COLOR_ALT = '#39FF14' # Neon Green (Accents)
-
-    # Create a display copy so we don't break the ML pipeline's binary 0/1 labels
+    
     df_eda = df.copy()
     df_eda["Churn"] = df_eda["Churn"].map({1: "Yes", 0: "No"})
 
@@ -358,16 +340,11 @@ with tab_eda:
         # ---------------------------------------------------------
         # BAR CHART: Overall Churn Count
         # ---------------------------------------------------------
-        # 1. Create figure
         fig, ax = plt.subplots(figsize=(6, 4))
-        # 2. Plot bars with specific neon colors
         bars = ax.bar(churn_counts.index, churn_counts.values, color=[COLOR_NO, COLOR_YES])
-        # 3. Add Gridlines for readability
         ax.grid(axis='y', linestyle='--', alpha=0.6)
-        # 4. Add Labels
         ax.set_title("Churn Count Bar Chart")
         ax.set_ylabel("Number of Customers")
-        # 5. Add Text annotations on top of bars
         for bar in bars:
             ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 30, 
                     f"{int(bar.get_height())}", ha="center", color="white", fontweight="bold")
@@ -377,12 +354,9 @@ with tab_eda:
         # ---------------------------------------------------------
         # PIE CHART: Overall Churn Share
         # ---------------------------------------------------------
-        # 1. Create figure
         fig, ax = plt.subplots(figsize=(6, 4))
-        # 2. Plot pie chart with white text props
         ax.pie(churn_counts.values, labels=churn_counts.index, autopct="%1.1f%%", 
                startangle=90, colors=[COLOR_NO, COLOR_YES], textprops={'color':"white", 'weight':'bold'})
-        # 3. Add Title
         ax.set_title("Churn Share (%)")
         st.pyplot(fig)
     
@@ -403,12 +377,9 @@ with tab_eda:
             # ---------------------------------------------------------
             # HISTOGRAM: Overlapping Distributions
             # ---------------------------------------------------------
-            # 1. Create figure
             fig, ax = plt.subplots(figsize=(6, 4))
-            # 2. Plot Stayed (Cyan) and Churned (Magenta) with transparency (alpha)
             ax.hist(churn_no_n,  bins=30, alpha=0.6, color=COLOR_NO,  label="Stayed (No)")
             ax.hist(churn_yes_n, bins=30, alpha=0.6, color=COLOR_YES, label="Churned (Yes)")
-            # 3. Add Grid and Labels
             ax.grid(linestyle='--', alpha=0.5)
             ax.set_title(f"Histogram: {num_col}")
             ax.set_xlabel(num_col)
@@ -420,22 +391,17 @@ with tab_eda:
             # ---------------------------------------------------------
             # LINE + SCATTER PLOT: Trend Analysis
             # ---------------------------------------------------------
-            # 1. Create figure
             fig, ax = plt.subplots(figsize=(6, 4))
-            # 2. Calculate continuous bins manually
             counts_yes, bins = np.histogram(churn_yes_n, bins=20)
             counts_no,  _    = np.histogram(churn_no_n,  bins=bins)
             bin_centers = (bins[:-1] + bins[1:]) / 2
             
-            # 3. Draw the continuous Lines
             ax.plot(bin_centers, counts_no,  color=COLOR_NO,  linewidth=2, label="Stayed (No)")
             ax.plot(bin_centers, counts_yes, color=COLOR_YES, linewidth=2, label="Churned (Yes)")
             
-            # 4. Overlay the Scatter Points directly on the line
             ax.scatter(bin_centers, counts_no,  color="white", zorder=5)
             ax.scatter(bin_centers, counts_yes, color="white", zorder=5)
             
-            # 5. Format and display
             ax.grid(linestyle='--', alpha=0.5)
             ax.set_title(f"Line & Scatter: {num_col} Trend")
             ax.set_xlabel(num_col)
@@ -472,13 +438,12 @@ with tab_eda:
             # BAR CHART: Categorical Churn Rate
             # ---------------------------------------------------------
             fig, ax = plt.subplots(figsize=(6, 4))
-            # Plot with Magenta to signify risk
             bars = ax.bar(categories_c, rates_c, color=COLOR_YES)
             ax.grid(axis='y', linestyle='--', alpha=0.5)
             ax.set_ylabel("Churn Rate (%)")
             ax.set_title(f"Bar Chart: Churn Rate by {cat}")
             plt.xticks(rotation=15)
-            # Add percentage text on top
+            
             for bar in bars:
                 ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 1, 
                         f"{bar.get_height()}%", ha="center", color="white", fontsize=9)
@@ -489,13 +454,11 @@ with tab_eda:
             # PIE CHART: Categorical Share
             # ---------------------------------------------------------
             fig, ax = plt.subplots(figsize=(6, 4))
-            # Generate a dynamic cool color palette based on number of categories
             pie_colors = sns.color_palette("cool", len(categories_c))
             ax.pie(rates_c, labels=categories_c, autopct="%1.1f%%", colors=pie_colors, textprops={'color':"white"})
             ax.set_title(f"Pie Chart: {cat} Churn Share")
             st.pyplot(fig)
-    
-        # DYNAMIC INSIGHT BLOCK FOR CATEGORICALS
+            
         highest_risk_category = cr.loc[cr["Churn Rate (%)"].idxmax(), cat]
         highest_rate = cr["Churn Rate (%)"].max()
         st.info(f" **Insight:** Within **{cat}**, the **'{highest_risk_category}'** segment carries the highest churn risk at **{highest_rate:.1f}%**.")
@@ -544,8 +507,7 @@ with tab_eda:
                    autopct="%1.1f%%", colors=sns.color_palette("viridis", len(seg_churn)), textprops={'color':"white"})
             ax.set_title("Tenure Segment Churn Share")
             st.pyplot(fig)
-    
-        # SPECIFIC INSIGHT FOR TENURE BINS
+            
         highest_bin = seg_churn.loc[seg_churn["Churn Rate (%)"].idxmax(), "Tenure Segment"]
         st.info(f" **Insight:** The **{highest_bin}** group is the most dangerous period in the customer lifecycle. Retention efforts should be heavily focused here before they mature.")
 
@@ -554,19 +516,14 @@ with tab_eda:
     # Generate temporary encoded dataframe strictly for the correlation heatmap
     df_encoded = pd.get_dummies(df, drop_first=True)
     
-    # 1. Create a large figure to fit the heatmap
-    fig, ax = plt.subplots(figsize=(12, 8))
-    # 2. Mask the upper triangle for cleaner viewing
+    fig, ax = plt.subplots(figsize=(12, 8)
     mask = np.triu(np.ones_like(df_encoded.corr(), dtype=bool))
-    # 3. Plot with a dark-friendly colormap (mako or magma work well on black)
     sns.heatmap(df_encoded.corr(), mask=mask, annot=False,
                 cmap="mako", ax=ax, linewidths=0.3, linecolor='black')
     ax.set_title("Feature Correlation Matrix", color="white", size=14)
-    # Ensure tick labels are white
     ax.tick_params(colors='white')
     st.pyplot(fig)
 
-    # DYNAMIC INSIGHT BLOCK FOR CORRELATION HEATMAP
     corr_matrix = df_encoded.corr()
     if "Churn" in corr_matrix.columns:
         # Sort absolute correlations with Churn (excluding Churn itself)
@@ -598,7 +555,6 @@ with tab_cmp:
     }
     st.dataframe(results_df.style.format(format_dict), use_container_width=True)
     
-    # CORRECTED: Changed "F1 Score" to "F1 Score (Churn)" to prevent KeyError
     best_row = results_df.loc[results_df["F1 Score (Churn)"].idxmax()]
     best_auc = best_row["ROC-AUC"] if "ROC-AUC" in best_row else 0.0 
     
@@ -687,7 +643,6 @@ with tab_feat:
     # HORIZONTAL BAR CHART: Feature Importances
     # ---------------------------------------------------------
     fig, ax = plt.subplots(figsize=(10, 5))
-    # Reverse the order so the largest is at the top
     y_pos = np.arange(len(top10))
     ax.barh(y_pos, top10["Importance"][::-1], color=COLOR_ALT)
     ax.set_yticks(y_pos)
@@ -715,7 +670,6 @@ with tab_feat:
         st.markdown(f" {original_col} vs Churn")
 
         if df[original_col].dtype == "object":
-            # Categorical Insights
             churn_rate = (df_eda.groupby(original_col)["Churn"].apply(lambda x: (x == "Yes").mean() * 100).reset_index())
             churn_rate.columns = [original_col, "Churn Rate (%)"]
             categories, rates = churn_rate[original_col].tolist(), churn_rate["Churn Rate (%)"].tolist()
@@ -737,13 +691,11 @@ with tab_feat:
                 # PIE CHART: Categorical Churn Share
                 # ---------------------------------------------------------
                 fig, ax = plt.subplots(figsize=(6, 4))
-                # Generate unique colors for pie slices dynamically
                 pie_colors = sns.color_palette("cool", len(categories))
                 ax.pie(rates, labels=categories, autopct='%1.1f%%', colors=pie_colors, textprops={'color':"white"})
                 ax.set_title(f"Pie Chart: Churn Impact by {original_col}")
                 st.pyplot(fig)
-   
-            # DYNAMIC INSIGHT BLOCK FOR ML CATEGORICALS
+                
             highest_risk_category = churn_rate.loc[churn_rate["Churn Rate (%)"].idxmax(), original_col]
             highest_rate = churn_rate["Churn Rate (%)"].max()
             st.info(f" **Model Insight:** The ML model flagged **{original_col}** as a top driver of churn because the **'{highest_risk_category}'** segment is fleeing at a rate of **{highest_rate:.1f}%**. This is a critical risk factor.")
@@ -759,16 +711,13 @@ with tab_feat:
                 # LINE PLOT WITH SCATTER: Trend Distribution
                 # ---------------------------------------------------------
                 fig, ax = plt.subplots(figsize=(6, 4))
-                # 1. Calculate Histogram bins manually to plot as a Line
                 counts_yes, bins = np.histogram(churn_yes, bins=20)
                 counts_no,  _    = np.histogram(churn_no,  bins=bins)
                 bin_centers = (bins[:-1] + bins[1:]) / 2
                 
-                # 2. Draw the continuous Line
                 ax.plot(bin_centers, counts_no,  color=COLOR_NO,  linewidth=2, label="Stayed (No)")
                 ax.plot(bin_centers, counts_yes, color=COLOR_YES, linewidth=2, label="Churned (Yes)")
                 
-                # 3. Overlay the Scatter Points directly on the line
                 ax.scatter(bin_centers, counts_no,  color="white", zorder=5)
                 ax.scatter(bin_centers, counts_yes, color="white", zorder=5)
                 
@@ -784,7 +733,6 @@ with tab_feat:
                 # SCATTER PLOT: Raw Data Scatter
                 # ---------------------------------------------------------
                 fig, ax = plt.subplots(figsize=(6, 4))
-                # Plot every single customer point, separated by churn status
                 ax.scatter(range(len(churn_no)),  churn_no,  color=COLOR_NO,  alpha=0.3, s=5, label="Stayed")
                 ax.scatter(range(len(churn_yes)), churn_yes, color=COLOR_YES, alpha=0.3, s=5, label="Churned")
                 ax.grid(True)
@@ -793,8 +741,7 @@ with tab_feat:
                 ax.set_title("Raw Scatter Plot")
                 ax.legend()
                 st.pyplot(fig)
-   
-            # DYNAMIC INSIGHT BLOCK FOR ML NUMERICS
+                
             mean_yes = churn_yes.mean()
             mean_no = churn_no.mean()
             if mean_yes > mean_no:
@@ -890,10 +837,6 @@ with tab_pred:
                     float(X_raw[field].min()), float(X_raw[field].max()),
                     float(X_raw[field].mean()), key=f"r_{field}")
 
-    # =========================================================================
-    # THE PIPELINE FLEX: Build an aligned 1-row DataFrame mapping exactly to X_raw.
-    # No pd.get_dummies, no reindexing, no manual scaler.transform!
-    # =========================================================================
     input_df = pd.DataFrame([user_inputs])[X_raw.columns]
 
     st.divider()
@@ -946,7 +889,7 @@ with tab_pred:
 
     if st.button(" Predict Churn & ROI"):
         
-        # --- CLEAN PIPELINE PREDICTION ---
+        
         model_prob = final_pipe.predict_proba(input_df)[0][1]
         combined   = 0.7 * model_prob + 0.3 * business_prob
 
@@ -1020,7 +963,6 @@ with tab_pred:
             labels = ["Lost (Before)", "Lost (After)", "Retained"]
             values = [rev_lost_before / 1e3, rev_lost_after / 1e3, revenue_retained / 1e3]
             
-            # Map colors: Magenta for lost, Cyan for retained
             bar_colors = [COLOR_YES, '#FF6666', COLOR_NO]
             
             bars = ax.bar(labels, values, color=bar_colors)
@@ -1028,7 +970,7 @@ with tab_pred:
             ax.set_ylabel("Amount (₹ Thousands)")
             ax.set_title("Annual Revenue Impact")
             
-            # Add text labels on top of bars
+            
             for bar, val in zip(bars, [rev_lost_before, rev_lost_after, revenue_retained]):
                 ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5, f"₹{val/1e3:,.0f}K", ha="center", color="white")
             st.pyplot(fig)
@@ -1041,20 +983,18 @@ with tab_pred:
             labels = ["Before ML", "After ML", "Reduced"]
             values = [churners_before, churners_after, churners_reduced]
             
-            # Map colors
             bar_colors = [COLOR_YES, '#FF6666', COLOR_NO]
-            
             bars = ax.bar(labels, values, color=bar_colors)
             ax.grid(axis='y')
             ax.set_ylabel("Number of Customers")
             ax.set_title("Total Churn Count Impact")
             
-            # Add text labels
+        
             for bar, val in zip(bars, values):
                 ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 5, str(val), ha="center", color="white")
             st.pyplot(fig)
 
-        # ── Full breakdown table — full width ──────────────────────────────────
+        
         st.markdown("Full ROI Breakdown Table")
         breakdown = pd.DataFrame({
             "Metric": [
