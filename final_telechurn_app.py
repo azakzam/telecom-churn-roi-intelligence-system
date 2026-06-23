@@ -143,9 +143,6 @@ with st.sidebar:
 rs = int(random_state)
 X_trainval, X_test, y_trainval, y_test = train_test_split(X_raw, y, test_size=test_size, random_state=rs, stratify=y)
 
-# =============================================================================
-# PIPELINE DEFINITIONS WITH SLIDER VALUES
-# =============================================================================
 pipelines = {
     "Logistic Regression": ImbPipeline([
         ("pre", make_preprocessor(include_scaler=True)),  
@@ -213,9 +210,6 @@ with st.spinner("Training models with selected hyperparameters..."):
         "Precision (Churn)", "Accuracy", "Threshold"
         ])
 
-# ─────────────────────────────────────────────────────────────────────────────
-# MANUAL MODEL SELECTION OVERRIDE
-# ─────────────────────────────────────────────────────────────────────────────
 st.divider()
 st.markdown("Select Model for Downstream Analysis")
 
@@ -316,9 +310,9 @@ with tab_data:
 with tab_eda:
     st.subheader("🔍 Exploratory Data Analysis")
 
-    COLOR_NO  = '#00FFFF' # Cyan (No Churn)
-    COLOR_YES = '#FF00FF' # Magenta (Churn)
-    COLOR_ALT = '#39FF14' # Neon Green (Accents)
+    COLOR_NO  = '#00FFFF' 
+    COLOR_YES = '#FF00FF' 
+    COLOR_ALT = '#39FF14' 
     
     df_eda = df.copy()
     df_eda["Churn"] = df_eda["Churn"].map({1: "Yes", 0: "No"})
@@ -554,7 +548,6 @@ with tab_cmp:
         
     col1, col2 = st.columns(2)
     with col1:
-        # BAR CHART: ROC-AUC
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.bar(results_df["Model"], results_df["ROC-AUC"], color=COLOR_ALT)
         ax.grid(axis='y')
@@ -564,7 +557,6 @@ with tab_cmp:
         st.pyplot(fig)
         
     with col2:
-        # BAR CHART: Model F1 Score (Churn)
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.bar(results_df["Model"], results_df["F1 Score (Churn)"], color=COLOR_NO)
         ax.grid(axis='y')
@@ -598,7 +590,6 @@ with tab_eval:
 
     col_roc1, col_roc2 = st.columns(2)
     with col_roc1:
-        # LINE PLOT: ROC Curve
         fpr, tpr, _ = roc_curve(y_test, y_prob_test)
         roc_auc_val = auc(fpr, tpr) # Calculate safely 
         fig, ax = plt.subplots(figsize=(6, 4))
@@ -612,7 +603,6 @@ with tab_eval:
         st.pyplot(fig)
 
     with col_roc2:
-        # LINE PLOT: Precision-Recall Curve
         prec_v, rec_v, _ = precision_recall_curve(y_test, y_prob_test)
         fig, ax = plt.subplots(figsize=(6, 4))
         ax.plot(rec_v, prec_v, color=COLOR_NO, linewidth=2)
@@ -690,15 +680,11 @@ with tab_feat:
             st.info(f" **Model Insight:** The ML model flagged **{original_col}** as a top driver of churn because the **'{highest_risk_category}'** segment is fleeing at a rate of **{highest_rate:.1f}%**. This is a critical risk factor.")
         
         else:
-            # Numeric Insights
             churn_yes = df_eda[df_eda["Churn"] == "Yes"][original_col].dropna()
             churn_no  = df_eda[df_eda["Churn"] == "No"][original_col].dropna()
 
             col1, col2 = st.columns(2)
             with col1:
-                # ---------------------------------------------------------
-                # LINE PLOT WITH SCATTER: Trend Distribution
-                # ---------------------------------------------------------
                 fig, ax = plt.subplots(figsize=(6, 4))
                 counts_yes, bins = np.histogram(churn_yes, bins=20)
                 counts_no,  _    = np.histogram(churn_no,  bins=bins)
@@ -718,9 +704,6 @@ with tab_feat:
                 st.pyplot(fig)
                 
             with col2:
-                # ---------------------------------------------------------
-                # SCATTER PLOT: Raw Data Scatter
-                # ---------------------------------------------------------
                 fig, ax = plt.subplots(figsize=(6, 4))
                 ax.scatter(range(len(churn_no)),  churn_no,  color=COLOR_NO,  alpha=0.3, s=5, label="Stayed")
                 ax.scatter(range(len(churn_yes)), churn_yes, color=COLOR_YES, alpha=0.3, s=5, label="Churned")
@@ -773,7 +756,6 @@ with tab_roi:
     
     st.info("Check Tab 7 for the interactive Prediction and Visual Charts for Revenue/Churn reduction.")
     
-
 # ─────────────────────────────────────────────────────────────────────────────
 # TAB 7 — PREDICT & ROI DASHBOARD
 # ─────────────────────────────────────────────────────────────────────────────
@@ -831,7 +813,6 @@ with tab_pred:
     st.divider()
     st.subheader(" Business Recommendation Prediction")
 
-    # Simple risk scoring logic based on overall dataset
     churn_tables = {}
     for col in X_raw.columns:
         if X_raw[col].dtype == "object":
@@ -899,10 +880,7 @@ with tab_pred:
         else:
             st.success("✅ Low Risk — Maintain engagement")
             st.write("→ Standard newsletters and offers")
-
-        # ======================================================================
-        # Global ROI Math Based on Prediction
-        # ======================================================================
+            
         st.divider()
         st.subheader(" Business ROI — Based on This Prediction")
 
@@ -945,9 +923,6 @@ with tab_pred:
         rev_col, churn_col = st.columns(2)
 
         with rev_col:
-            # ---------------------------------------------------------
-            # BAR CHART: Revenue Impact
-            # ---------------------------------------------------------
             fig, ax = plt.subplots(figsize=(6, 4))
             labels = ["Lost (Before)", "Lost (After)", "Retained"]
             values = [rev_lost_before / 1e3, rev_lost_after / 1e3, revenue_retained / 1e3]
@@ -965,9 +940,6 @@ with tab_pred:
             st.pyplot(fig)
 
         with churn_col:
-            # ---------------------------------------------------------
-            # BAR CHART: Churn Volume Impact
-            # ---------------------------------------------------------
             fig, ax = plt.subplots(figsize=(6, 4))
             labels = ["Before ML", "After ML", "Reduced"]
             values = [churners_before, churners_after, churners_reduced]
