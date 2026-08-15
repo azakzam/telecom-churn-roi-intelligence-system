@@ -505,7 +505,7 @@ with tab_eda:
     st.markdown("Correlation Heatmap (Encoded Features)")
     df_encoded = pd.get_dummies(df, drop_first=True)
     
-    fig, ax = plt.subplots(figsize=(12, 8)
+    fig, ax = plt.subplots(figsize=(12, 8))
     mask = np.triu(np.ones_like(df_encoded.corr(), dtype=bool))
     sns.heatmap(df_encoded.corr(), mask=mask, annot=False,
                 cmap="mako", ax=ax, linewidths=0.3, linecolor='black')
